@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه جامع کارنامه و تحلیل عملکرد - دبیرستان و هنرستان الزهرا</title>
+    <!-- Vazirmatn Font & Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for Reading Excel Files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Chart.js for Data Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#0a3651',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        /* --- Dynamic Print Styles --- */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-area {
+                display: block !important;
+                width: 100% !important;
+            }
+            .card-page {
+                page-break-after: always !important;
+                break-after: page !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .card-page:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+        }
+
+        #dynamic-print-css {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Injected Styles for Print Settings -->
+    <style id="dynamic-print-css"></style>
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-white/10 rounded-xl backdrop-blur-md">
+                    <i data-lucide="graduation-cap" class="w-8 h-8 text-amber-400"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">دبیرستان و هنرستان الزهرا</h1>
+                    <p class="text-xs text-brand-100 mt-0.5">سامانه صدور کارنامه هوشمند A5 و تحلیل عملکرد مدیریت</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="btn-tab-cards" onclick="switchTab('cards')" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-white text-brand-900 shadow">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    کارنامه‌ها
+                </button>
+                <button id="btn-tab-analytics" onclick="switchTab('analytics')" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-brand-800 text-brand-100 hover:bg-brand-700">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                    داشبورد آمار و تحلیل
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- Top Upload & Control Panel -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 no-print transition">
+            <div class="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
+                <!-- File Upload Box -->
+                <div class="w-full lg:w-1/2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">بارگذاری فایل اکسل (چند رشته / چند کلاس همزمان)</label>
+                    <div class="relative border-2 border-dashed border-brand-200 hover:border-brand-500 rounded-xl p-4 text-center bg-brand-50/50 hover:bg-brand-50 transition cursor-pointer group">
+                        <input type="file" id="excel-file-input" multiple accept=".xlsx, .xls" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleExcelUpload(event)">
+                        <div class="flex items-center justify-center gap-3 text-brand-700">
+                            <i data-lucide="file-spreadsheets" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-sm font-medium">انتخاب یک یا چند فایل اکسل (.xlsx)</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1.5 flex items-center gap-1">
+                        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                        شامل ۳ شیت (مستمر1، مستمر2، مستمر3) با ستون‌های شماره دانش‌آموزی، شماره کلاس، پایه، رشته و اسامی دروس.
+                    </p>
+                </div>
+
+                <!-- Stats summary badge -->
+                <div class="w-full lg:w-auto flex flex-wrap gap-3" id="quick-stats-badges">
+                    <div class="bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-center flex-1 min-w-[110px]">
+                        <span class="text-xs text-slate-500 block">دانش‌آموزان</span>
+                        <span id="stat-total-students" class="text-lg font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-center flex-1 min-w-[110px]">
+                        <span class="text-xs text-slate-500 block">کلاس‌ها</span>
+                        <span id="stat-total-classes" class="text-lg font-bold text-brand-600">0</span>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-center flex-1 min-w-[110px]">
+                        <span class="text-xs text-slate-500 block">رشته‌ها</span>
+                        <span id="stat-total-majors" class="text-lg font-bold text-purple-600">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters Toolbar -->
+            <div id="filter-toolbar" class="mt-5 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">فیلتر رشته</label>
+                    <select id="filter-major" onchange="onMajorChange()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                        <option value="ALL">همه رشته‌ها</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">فیلتر پایه</label>
+                    <select id="filter-grade" onchange="onGradeChange()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                        <option value="ALL">همه پایه‌ها</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">فیلتر شماره کلاس</label>
+                    <select id="filter-class" onchange="onClassChange()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                        <option value="ALL">همه کلاس‌ها</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">وضعیت تحصیلی</label>
+                    <select id="filter-status" onchange="applyFilters()" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                        <option value="ALL">همه دانش‌آموزان</option>
+                        <option value="FAILED">دارای درس افتاده</option>
+                        <option value="BORDERLINE">دارای درس لب مرزی</option>
+                        <option value="TOP">ممتازین (معدل ۱۸+)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">جستجوی نام/کد</label>
+                    <input type="text" id="search-input" oninput="applyFilters()" placeholder="جستجو..." class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 1: REPORT CARDS TAB -->
+        <div id="tab-content-cards" class="space-y-6">
+            
+            <!-- Print Settings Toolbar -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 no-print flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex flex-wrap items-center gap-4 text-xs">
+                    <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                        <i data-lucide="printer" class="w-4 h-4 text-brand-600"></i>
+                        تنظیمات چاپ و کاغذ:
+                    </span>
+                    <!-- Orientation Selection -->
+                    <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                        <label class="cursor-pointer px-2 py-1 rounded text-slate-600 select-none">
+                            <input type="radio" name="print-orient" value="landscape" checked onchange="updatePrintStyles()" class="hidden peer">
+                            <span class="peer-checked:bg-white peer-checked:text-brand-700 peer-checked:shadow text-xs font-medium px-2 py-1 rounded block">افقی (Landscape)</span>
+                        </label>
+                        <label class="cursor-pointer px-2 py-1 rounded text-slate-600 select-none">
+                            <input type="radio" name="print-orient" value="portrait" onchange="updatePrintStyles()" class="hidden peer">
+                            <span class="peer-checked:bg-white peer-checked:text-brand-700 peer-checked:shadow text-xs font-medium px-2 py-1 rounded block">عمودی (Portrait)</span>
+                        </label>
+                    </div>
+
+                    <!-- Paper Size Selection -->
+                    <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                        <label class="cursor-pointer px-2 py-1 rounded text-slate-600 select-none">
+                            <input type="radio" name="print-paper" value="A5" checked onchange="updatePrintStyles()" class="hidden peer">
+                            <span class="peer-checked:bg-white peer-checked:text-brand-700 peer-checked:shadow text-xs font-medium px-2 py-1 rounded block">سایز A5</span>
+                        </label>
+                        <label class="cursor-pointer px-2 py-1 rounded text-slate-600 select-none">
+                            <input type="radio" name="print-paper" value="A4" onchange="updatePrintStyles()" class="hidden peer">
+                            <span class="peer-checked:bg-white peer-checked:text-brand-700 peer-checked:shadow text-xs font-medium px-2 py-1 rounded block">سایز A4</span>
+                        </label>
+                    </div>
+
+                    <!-- Cards Per Page -->
+                    <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+                        <label class="cursor-pointer px-2 py-1 rounded text-slate-600 select-none">
+                            <input type="radio" name="print-layout" value="1" checked onchange="updatePrintStyles()" class="hidden peer">
+                            <span class="peer-checked:bg-white peer-checked:text-brand-700 peer-checked:shadow text-xs font-medium px-2 py-1 rounded block">۱ کارنامه در صفحه</span>
+                        </label>
+                        <label class="cursor-pointer px-2 py-1 rounded text-slate-600 select-none">
+                            <input type="radio" name="print-layout" value="2" onchange="updatePrintStyles()" class="hidden peer">
+                            <span class="peer-checked:bg-white peer-checked:text-brand-700 peer-checked:shadow text-xs font-medium px-2 py-1 rounded block">۲ کارنامه در ۱ برگه (زوجی)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button onclick="window.print()" class="w-full md:w-auto px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    چاپ / خروجی PDF
+                </button>
+            </div>
+
+            <!-- Empty State Prompt -->
+            <div id="cards-empty-state" class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+                <i data-lucide="file-spreadsheets" class="w-16 h-16 mx-auto text-slate-300 mb-4"></i>
+                <h3 class="text-base font-bold text-slate-700">هیچ کارنامه‌ای بارگذاری نشده است</h3>
+                <p class="text-xs text-slate-500 mt-1">لطفاً فایل‌های اکسل حاوی نمرات را از پنل بالا آپلود کنید.</p>
+            </div>
+
+            <!-- Report Cards Render Container -->
+            <div id="cards-render-container" class="space-y-8"></div>
+        </div>
+
+        <!-- TAB 2: ANALYTICS DASHBOARD TAB -->
+        <div id="tab-content-analytics" class="space-y-6 hidden no-print">
+            
+            <!-- Executive Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                        <i data-lucide="award" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 block">میانگین کل کلاس/پایه</span>
+                        <span id="dash-avg-gpa" class="text-xl font-black text-slate-800">0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <i data-lucide="trending-up" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 block">بالاترین معدل</span>
+                        <span id="dash-max-gpa" class="text-xl font-black text-emerald-600">0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                        <i data-lucide="trending-down" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 block">پایین‌ترین معدل</span>
+                        <span id="dash-min-gpa" class="text-xl font-black text-amber-600">0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-500 block">نرخ قبولی کل</span>
+                        <span id="dash-pass-rate" class="text-xl font-black text-slate-800">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject Comparative Chart & Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Bar Chart -->
+                <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-brand-600"></i>
+                        تحلیل و مقایسه میانگین نمرات دروس کلاس
+                    </h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Detailed Subject Table -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-4 h-4 text-brand-600"></i>
+                        آمار نمرات به تفکیک درس
+                    </h3>
+                    <div class="overflow-y-auto flex-grow max-h-64 border border-slate-100 rounded-xl">
+                        <table class="w-full text-xs text-right">
+                            <thead class="bg-slate-50 text-slate-600 sticky top-0 font-bold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-2">نام درس</th>
+                                    <th class="p-2 text-center">میانگین</th>
+                                    <th class="p-2 text-center">مکس</th>
+                                    <th class="p-2 text-center">مین</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-subjects-table" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Class Ranking & Comprehensive Table -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+                    رتبه‌بندی تحلیلی دانش‌آموزان
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-right border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                                <th class="p-2.5">رتبه</th>
+                                <th class="p-2.5">شماره دانش‌آموزی</th>
+                                <th class="p-2.5">نام و نام خانوادگی</th>
+                                <th class="p-2.5">کلاس</th>
+                                <th class="p-2.5">پایه / رشته</th>
+                                <th class="p-2.5 text-center">معدل کل</th>
+                                <th class="p-2.5 text-center">وضعیت قبولی</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-ranking-table" class="divide-y divide-slate-100">
+                            <!-- Dynamic ranking rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto no-print text-center text-xs text-slate-500">
+        دبیرستان و هنرستان الزهرا © ۱۴۰۳ - طراحی شده جهت صدور سریع کارنامه‌های استاندارد A5
+    </footer>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        let globalStudents = [];
+        let filteredStudents = [];
+        let analyticsChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updatePrintStyles();
+        });
+
+        function switchTab(tab) {
+            const btnCards = document.getElementById('btn-tab-cards');
+            const btnAnalytics = document.getElementById('btn-tab-analytics');
+            const tabCards = document.getElementById('tab-content-cards');
+            const tabAnalytics = document.getElementById('tab-content-analytics');
+
+            if (tab === 'cards') {
+                btnCards.className = "px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-white text-brand-900 shadow";
+                btnAnalytics.className = "px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-brand-800 text-brand-100 hover:bg-brand-700";
+                tabCards.classList.remove('hidden');
+                tabAnalytics.classList.add('hidden');
+            } else {
+                btnAnalytics.className = "px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-white text-brand-900 shadow";
+                btnCards.className = "px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 bg-brand-800 text-brand-100 hover:bg-brand-700";
+                tabAnalytics.classList.remove('hidden');
+                tabCards.classList.add('hidden');
+                renderAnalyticsDashboard();
+            }
+        }
+
+        function updatePrintStyles() {
+            const orient = document.querySelector('input[name="print-orient"]:checked').value;
+            const paper = document.querySelector('input[name="print-paper"]:checked').value;
+            const layout = document.querySelector('input[name="print-layout"]:checked').value;
+
+            const styleTag = document.getElementById('dynamic-print-css');
+            let css = `@page { size: ${paper} ${orient}; margin: 8mm; }`;
+            
+            if (layout === "2") {
+                css += `
+                    .cards-wrapper {
+                        display: grid !important;
+                        grid-template-columns: ${orient === 'landscape' ? '1fr 1fr' : '1fr'} !important;
+                        grid-template-rows: ${orient === 'landscape' ? '1fr' : '1fr 1fr'} !important;
+                        gap: 10mm !important;
+                        height: 100vh !important;
+                        page-break-after: always !important;
+                    }
+                    .card-page {
+                        page-break-after: avoid !important;
+                        height: 100% !important;
+                        border: 1px dashed #cbd5e1 !important;
+                        padding: 10px !important;
+                    }
+                `;
+            } else {
+                css += `
+                    .card-page {
+                        page-break-after: always !important;
+                        height: 98vh !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        justify-content: space-between !important;
+                    }
+                `;
+            }
+            styleTag.innerHTML = css;
+        }
+
+        async function handleExcelUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            for (let file of files) {
+                try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    processWorkbook(workbook);
+                } catch (err) {
+                    alert('خطا در خواندن فایل اکسل: ' + err.message);
+                }
+            }
+
+            populateMajorDropdown();
+            applyFilters();
+        }
+
+        function processWorkbook(wb) {
+            const sheetNames = wb.SheetNames;
+            const sheetM1 = wb.Sheets['مستمر1'] || wb.Sheets[sheetNames[0]];
+            const sheetM2 = wb.Sheets['مستمر2'] || wb.Sheets[sheetNames[1] || sheetNames[0]];
+            const sheetM3 = wb.Sheets['مستمر3'] || wb.Sheets[sheetNames[2] || sheetNames[0]];
+
+            const jsonM1 = XLSX.utils.sheet_to_json(sheetM1);
+            const jsonM2 = XLSX.utils.sheet_to_json(sheetM2);
+            const jsonM3 = XLSX.utils.sheet_to_json(sheetM3);
+
+            if (!jsonM1 || jsonM1.length === 0) return;
+
+            const metaKeys = ['شماره دانش‌آموزی', 'شماره کلاس', 'سال تحصیلی', 'نام مدرسه', 'نام', 'نام خانوادگی', 'پایه', 'رشته'];
+            const allKeys = Object.keys(jsonM1[0]);
+            const subjectKeys = allKeys.filter(k => !metaKeys.includes(k.trim()));
+
+            jsonM1.forEach(st => {
+                const studentId = String(st['شماره دانش‌آموزی'] || st['نام'] + '_' + st['نام خانوادگی']);
+                const firstName = st['نام'] || '';
+                const lastName = st['نام خانوادگی'] || '';
+                const fullName = (firstName + ' ' + lastName).trim() || 'دانش‌آموز';
+                const classNum = String(st['شماره کلاس'] || '۱۰۱');
+                const grade = String(st['پایه'] || 'دهم');
+                const major = String(st['رشته'] || 'عمومی');
+                const schoolName = String(st['نام مدرسه'] || 'دبیرستان و هنرستان الزهرا');
+                const academicYear = String(st['سال تحصیلی'] || '۱۴۰۳-۱۴۰۴');
+
+                const stM2 = jsonM2.find(x => String(x['شماره دانش‌آموزی']) === studentId || (x['نام'] === firstName && x['نام خانوادگی'] === lastName)) || {};
+                const stM3 = jsonM3.find(x => String(x['شماره دانش‌آموزی']) === studentId || (x['نام'] === firstName && x['نام خانوادگی'] === lastName)) || {};
+
+                let subjectsList = [];
+                let totalAverageSum = 0;
+                let validSubjectCount = 0;
+
+                subjectKeys.forEach(subj => {
+                    const score1 = parseFloat(st[subj]);
+                    const score2 = parseFloat(stM2[subj]);
+                    const score3 = parseFloat(stM3[subj]);
+
+                    if (!isNaN(score1) || !isNaN(score2) || !isNaN(score3)) {
+                        const s1 = isNaN(score1) ? 0 : score1;
+                        const s2 = isNaN(score2) ? s1 : score2;
+                        const s3 = isNaN(score3) ? s2 : score3;
+
+                        const avg = Math.round(((s1 + s2 + s3) / 3) * 100) / 100;
+
+                        subjectsList.push({ name: subj, m1: s1, m2: s2, m3: s3, avg: avg });
+                        totalAverageSum += avg;
+                        validSubjectCount++;
+                    }
+                });
+
+                const overallGPA = validSubjectCount > 0 ? Math.round((totalAverageSum / validSubjectCount) * 100) / 100 : 0;
+                const isVocational = major.includes('شبکه') || major.includes('حسابداری') || major.includes('هنرستان');
+                const failThreshold = isVocational ? 12 : 10;
+                const borderlineMax = isVocational ? 13 : 12;
+
+                const failedSubjects = subjectsList.filter(s => s.avg < failThreshold);
+                const borderlineSubjects = subjectsList.filter(s => s.avg >= failThreshold && s.avg < borderlineMax);
+
+                const existingIndex = globalStudents.findIndex(s => s.id === studentId);
+                const studentObj = {
+                    id: studentId, firstName, lastName, fullName, classNum, grade, major, schoolName, academicYear,
+                    subjects: subjectsList, gpa: overallGPA, isVocational, failedSubjects, borderlineSubjects, subjectRanks: {}
+                };
+
+                if (existingIndex >= 0) {
+                    globalStudents[existingIndex] = studentObj;
+                } else {
+                    globalStudents.push(studentObj);
+                }
+            });
+
+            calculateClassAndSubjectRanks();
+        }
+
+        function calculateClassAndSubjectRanks() {
+            const classGroups = {};
+            globalStudents.forEach(st => {
+                if (!classGroups[st.classNum]) classGroups[st.classNum] = [];
+                classGroups[st.classNum].push(st);
+            });
+
+            Object.values(classGroups).forEach(classStudents => {
+                classStudents.sort((a, b) => b.gpa - a.gpa);
+                classStudents.forEach((st, idx) => {
+                    st.classRank = idx + 1;
+                    st.classTotalCount = classStudents.length;
+                });
+
+                if (classStudents.length > 0) {
+                    const sampleSubjects = classStudents[0].subjects.map(s => s.name);
+                    sampleSubjects.forEach(subjName => {
+                        classStudents.sort((a, b) => {
+                            const avgA = (a.subjects.find(s => s.name === subjName) || {}).avg || 0;
+                            const avgB = (b.subjects.find(s => s.name === subjName) || {}).avg || 0;
+                            return avgB - avgA;
+                        });
+                        classStudents.forEach((st, idx) => {
+                            st.subjectRanks[subjName] = idx + 1;
+                        });
+                    });
+                }
+            });
+        }
+
+        // --- Cascading Filter Handlers ---
+        function populateMajorDropdown() {
+            const majorSelect = document.getElementById('filter-major');
+            const majors = [...new Set(globalStudents.map(s => s.major))];
+            majorSelect.innerHTML = '<option value="ALL">همه رشته‌ها</option>' + majors.map(m => `<option value="${m}">${m}</option>`).join('');
+            
+            updateGradeDropdown();
+        }
+
+        function onMajorChange() {
+            updateGradeDropdown();
+            applyFilters();
+        }
+
+        function updateGradeDropdown() {
+            const majorVal = document.getElementById('filter-major').value;
+            const gradeSelect = document.getElementById('filter-grade');
+
+            let relevantStudents = globalStudents;
+            if (majorVal !== 'ALL') {
+                relevantStudents = globalStudents.filter(s => s.major === majorVal);
+            }
+
+            const grades = [...new Set(relevantStudents.map(s => s.grade))];
+            gradeSelect.innerHTML = '<option value="ALL">همه پایه‌ها</option>' + grades.map(g => `<option value="${g}">${g}</option>`).join('');
+            
+            updateClassDropdown();
+        }
+
+        function onGradeChange() {
+            updateClassDropdown();
+            applyFilters();
+        }
+
+        function updateClassDropdown() {
+            const majorVal = document.getElementById('filter-major').value;
+            const gradeVal = document.getElementById('filter-grade').value;
+            const classSelect = document.getElementById('filter-class');
+
+            let relevantStudents = globalStudents;
+            if (majorVal !== 'ALL') {
+                relevantStudents = relevantStudents.filter(s => s.major === majorVal);
+            }
+            if (gradeVal !== 'ALL') {
+                relevantStudents = relevantStudents.filter(s => s.grade === gradeVal);
+            }
+
+            const classes = [...new Set(relevantStudents.map(s => s.classNum))];
+            classSelect.innerHTML = '<option value="ALL">همه کلاس‌ها</option>' + classes.map(c => `<option value="${c}">کلاس ${c}</option>`).join('');
+        }
+
+        function onClassChange() {
+            applyFilters();
+        }
+
+        // Apply Filters & Search
+        function applyFilters() {
+            const majorVal = document.getElementById('filter-major').value;
+            const gradeVal = document.getElementById('filter-grade').value;
+            const classVal = document.getElementById('filter-class').value;
+            const statusVal = document.getElementById('filter-status').value;
+            const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
+
+            filteredStudents = globalStudents.filter(st => {
+                const matchMajor = majorVal === 'ALL' || st.major === majorVal;
+                const matchGrade = gradeVal === 'ALL' || st.grade === gradeVal;
+                const matchClass = classVal === 'ALL' || st.classNum === classVal;
+                const matchSearch = !searchVal || st.fullName.toLowerCase().includes(searchVal) || st.id.includes(searchVal);
+
+                let matchStatus = true;
+                if (statusVal === 'FAILED') matchStatus = st.failedSubjects.length > 0;
+                else if (statusVal === 'BORDERLINE') matchStatus = st.borderlineSubjects.length > 0;
+                else if (statusVal === 'TOP') matchStatus = st.gpa >= 18;
+
+                return matchMajor && matchGrade && matchClass && matchSearch && matchStatus;
+            });
+
+            // Update Quick Stats Badges
+            document.getElementById('stat-total-students').innerText = globalStudents.length;
+            const uniqueClasses = [...new Set(globalStudents.map(s => s.classNum))];
+            const uniqueMajors = [...new Set(globalStudents.map(s => s.major))];
+            document.getElementById('stat-total-classes').innerText = uniqueClasses.length;
+            document.getElementById('stat-total-majors').innerText = uniqueMajors.length;
+
+            renderReportCards();
+            if (!document.getElementById('tab-content-analytics').classList.contains('hidden')) {
+                renderAnalyticsDashboard();
+            }
+        }
+
+        function renderReportCards() {
+            const container = document.getElementById('cards-render-container');
+            const emptyState = document.getElementById('cards-empty-state');
+
+            if (filteredStudents.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            const layout = document.querySelector('input[name="print-layout"]:checked').value;
+
+            let html = '';
+            if (layout === '2') {
+                for (let i = 0; i < filteredStudents.length; i += 2) {
+                    html += `<div class="cards-wrapper">`;
+                    html += generateCardHTML(filteredStudents[i]);
+                    if (i + 1 < filteredStudents.length) {
+                        html += generateCardHTML(filteredStudents[i + 1]);
+                    }
+                    html += `</div>`;
+                }
+            } else {
+                filteredStudents.forEach(st => {
+                    html += generateCardHTML(st);
+                });
+            }
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function generateCardHTML(st) {
+            const failedNames = st.failedSubjects.map(s => `${s.name} (${s.avg})`).join('، ') || 'هیچ درسی';
+            const borderlineNames = st.borderlineSubjects.map(s => `${s.name} (${s.avg})`).join('، ') || 'هیچ درسی';
+
+            const rowsHTML = st.subjects.map(s => `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-200 text-center">
+                    <td class="p-1.5 font-bold text-slate-800 text-right pr-3">${s.name}</td>
+                    <td class="p-1.5 text-slate-600">${s.m1}</td>
+                    <td class="p-1.5 text-slate-600">${s.m2}</td>
+                    <td class="p-1.5 text-slate-600">${s.m3}</td>
+                    <td class="p-1.5 font-black text-brand-700 bg-brand-50/50">${s.avg}</td>
+                    <td class="p-1.5 font-bold text-slate-700">${st.subjectRanks[s.name] || '-'}</td>
+                </tr>
+            `).join('');
+
+            return `
+                <div class="card-page bg-white rounded-2xl border border-slate-200 shadow-sm p-4 text-xs relative flex flex-col justify-between">
+                    <div>
+                        <div class="border-b-2 border-brand-800 pb-3 mb-3 flex justify-between items-center">
+                            <div>
+                                <h2 class="text-base font-black text-brand-900">${st.schoolName}</h2>
+                                <p class="text-[10px] text-slate-500 mt-0.5">کارنامه ارزیابی مستمر دوره تحصیلی</p>
+                            </div>
+                            <div class="text-left bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100">
+                                <span class="text-[10px] text-slate-500 block">سال تحصیلی</span>
+                                <span class="font-bold text-brand-800">${st.academicYear}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 mb-3 text-[11px]">
+                            <div><span class="text-slate-500">نام و خانوادگی:</span> <strong class="text-slate-800">${st.fullName}</strong></div>
+                            <div><span class="text-slate-500">شماره دانش‌آموزی:</span> <strong class="text-slate-800">${st.id}</strong></div>
+                            <div><span class="text-slate-500">پایه / رشته:</span> <strong class="text-slate-800">${st.grade} - ${st.major}</strong></div>
+                            <div><span class="text-slate-500">شماره کلاس:</span> <strong class="text-brand-700 font-bold">${st.classNum}</strong></div>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-xl border border-slate-200 mb-3">
+                            <table class="w-full text-right border-collapse">
+                                <thead>
+                                    <tr class="bg-brand-900 text-white text-center font-bold text-[10px]">
+                                        <th class="p-2 text-right pr-3">نام درس</th>
+                                        <th class="p-2">مستمر ۱</th>
+                                        <th class="p-2">مستمر ۲</th>
+                                        <th class="p-2">مستمر ۳</th>
+                                        <th class="p-2 bg-brand-800">میانگین</th>
+                                        <th class="p-2">رتبه در کلاس</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHTML}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="grid grid-cols-3 gap-2 text-center mb-3 text-[11px]">
+                            <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-xl">
+                                <span class="text-emerald-700 block text-[10px]">معدل کل مستمر</span>
+                                <strong class="text-base font-black text-emerald-800">${st.gpa}</strong>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 p-2 rounded-xl">
+                                <span class="text-blue-700 block text-[10px]">رتبه کل در کلاس</span>
+                                <strong class="text-base font-black text-blue-800">${st.classRank} <span class="text-xs font-normal">از ${st.classTotalCount}</span></strong>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-200 p-2 rounded-xl">
+                                <span class="text-rose-700 block text-[10px]">تعداد دروس افتاده</span>
+                                <strong class="text-base font-black text-rose-800">${st.failedSubjects.length}</strong>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1 mb-4 text-[10px] bg-slate-50 p-2 rounded-xl border border-slate-200">
+                            <div><strong class="text-rose-600">دروس نیازمند تلاش (افتاده):</strong> <span class="text-slate-700">${failedNames}</span></div>
+                            <div><strong class="text-amber-600">دروس لب مرزی:</strong> <span class="text-slate-700">${borderlineNames}</span></div>
+                        </div>
+
+                        <div class="flex justify-between items-end pt-2 border-t border-slate-200 text-center text-[10px] text-slate-600">
+                            <div class="w-1/3">
+                                <p class="font-bold">مهر و امضای مدیر مدرسه</p>
+                                <div class="h-8"></div>
+                            </div>
+                            <div class="w-1/3">
+                                <p class="font-bold">مهر و امضای معاون آموزشی</p>
+                                <div class="h-8"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAnalyticsDashboard() {
+            if (filteredStudents.length === 0) return;
+
+            const totalGPA = filteredStudents.reduce((acc, s) => acc + s.gpa, 0);
+            const avgGPA = Math.round((totalGPA / filteredStudents.length) * 100) / 100;
+            const maxGPA = Math.max(...filteredStudents.map(s => s.gpa));
+            const minGPA = Math.min(...filteredStudents.map(s => s.gpa));
+            const passedStudents = filteredStudents.filter(s => s.failedSubjects.length === 0).length;
+            const passRate = Math.round((passedStudents / filteredStudents.length) * 100);
+
+            document.getElementById('dash-avg-gpa').innerText = avgGPA;
+            document.getElementById('dash-max-gpa').innerText = maxGPA;
+            document.getElementById('dash-min-gpa').innerText = minGPA;
+            document.getElementById('dash-pass-rate').innerText = passRate + '%';
+
+            const subjectStats = {};
+            filteredStudents.forEach(st => {
+                st.subjects.forEach(s => {
+                    if (!subjectStats[s.name]) {
+                        subjectStats[s.name] = { name: s.name, scores: [] };
+                    }
+                    subjectStats[s.name].scores.push(s.avg);
+                });
+            });
+
+            const subjectsAnalysis = Object.values(subjectStats).map(subj => {
+                const sum = subj.scores.reduce((a, b) => a + b, 0);
+                const avg = Math.round((sum / subj.scores.length) * 100) / 100;
+                const max = Math.max(...subj.scores);
+                const min = Math.min(...subj.scores);
+                return { name: subj.name, avg, max, min };
+            });
+
+            const subjTable = document.getElementById('dash-subjects-table');
+            subjTable.innerHTML = subjectsAnalysis.map(s => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-2 font-bold">${s.name}</td>
+                    <td class="p-2 text-center font-bold text-brand-700">${s.avg}</td>
+                    <td class="p-2 text-center text-emerald-600 font-medium">${s.max}</td>
+                    <td class="p-2 text-center text-rose-600 font-medium">${s.min}</td>
+                </tr>
+            `).join('');
+
+            const sortedForRank = [...filteredStudents].sort((a, b) => b.gpa - a.gpa);
+            const rankTable = document.getElementById('dash-ranking-table');
+            rankTable.innerHTML = sortedForRank.map((st, idx) => `
+                <tr class="hover:bg-slate-50 transition text-slate-800">
+                    <td class="p-2.5 font-bold text-brand-800">#${idx + 1}</td>
+                    <td class="p-2.5">${st.id}</td>
+                    <td class="p-2.5 font-bold">${st.fullName}</td>
+                    <td class="p-2.5">${st.classNum}</td>
+                    <td class="p-2.5">${st.grade} - ${st.major}</td>
+                    <td class="p-2.5 text-center font-black text-brand-700">${st.gpa}</td>
+                    <td class="p-2.5 text-center">
+                        ${st.failedSubjects.length === 0 
+                            ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold">قبول</span>' 
+                            : `<span class="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.5 rounded-full font-bold">${st.failedSubjects.length} تجدید</span>`}
+                    </td>
+                </tr>
+            `).join('');
+
+            renderChart(subjectsAnalysis);
+        }
+
+        function renderChart(subjectsAnalysis) {
+            const ctx = document.getElementById('analyticsChart').getContext('2d');
+            if (analyticsChartInstance) {
+                analyticsChartInstance.destroy();
+            }
+
+            analyticsChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: subjectsAnalysis.map(s => s.name),
+                    datasets: [{
+                        label: 'میانگین درس',
+                        data: subjectsAnalysis.map(s => s.avg),
+                        backgroundColor: '#0284c7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 20,
+                            ticks: { stepSize: 2 }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
