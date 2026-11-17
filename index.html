@@ -268,8 +268,8 @@
             if (value === null || value === undefined || String(value).trim() === '') return null;
             const strVal = String(value).trim();
             const normalized = strVal.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٫،]/g, '.').trim();
-            if (normalized === '-99' || normalized.includes('غیبت') || normalizeFa(strVal).includes('غایب')) {
-                return -99;
+            if (normalized === '99' || normalized.includes('غیبت') || normalizeFa(strVal).includes('غایب')) {
+                return 99;
             }
             const n = Number(normalized); 
             return Number.isFinite(n) ? n : null;
@@ -284,7 +284,7 @@
                 groups.get(k).push(st);
             });
             groups.forEach(group => {
-                const validForRank = [...group].filter(st => !st.hasAnyAbsent && st.gpa !== -99).sort((a, b) => b.gpa - a.gpa);
+                const validForRank = [...group].filter(st => !st.hasAnyAbsent && st.gpa !== 99).sort((a, b) => b.gpa - a.gpa);
                 let currentRank = 1;
                 validForRank.forEach((st, i) => {
                     if (i > 0 && st.gpa !== validForRank[i - 1].gpa) {
@@ -293,7 +293,7 @@
                     st.classRank = currentRank;
                     st.classTotalCount = group.length;
                 });
-                group.filter(st => st.hasAnyAbsent || st.gpa === -99).forEach(st => {
+                group.filter(st => st.hasAnyAbsent || st.gpa === 99).forEach(st => {
                     st.classRank = 'نامشخص';
                     st.classTotalCount = group.length;
                 });
@@ -428,12 +428,12 @@
                     const subjects = subjectNames.map(name => {
                         const marks = st.stages.map(stage => stage[name] ?? null);
                         const entered = marks.filter(v => v !== null);
-                        const hasAbsent = entered.includes(-99);
-                        const validNumeric = entered.filter(v => v !== -99);
+                        const hasAbsent = entered.includes(99);
+                        const validNumeric = entered.filter(v => v !== 99);
                         
                         let avg = 0;
                         if (hasAbsent) {
-                            avg = -99;
+                            avg = 99;
                         } else if (validNumeric.length) {
                             avg = Math.round((validNumeric.reduce((a,b)=>a+b,0)/validNumeric.length)*100)/100;
                         }
@@ -441,7 +441,7 @@
                     });
                     
                     const scored = subjects.filter(x => st.stages.some(stage => Object.prototype.hasOwnProperty.call(stage,x.name)));
-                    const hasAnyAbsent = scored.some(s => s.hasAbsent || s.avg === -99);
+                    const hasAnyAbsent = scored.some(s => s.hasAbsent || s.avg === 99);
                     
                     let gpa = 0;
                     let totalScores = 0;
@@ -449,7 +449,7 @@
                         totalScores = Math.round(scored.reduce((a,x)=>a+x.avg,0)*100)/100;
                         gpa = Math.round((totalScores/scored.length)*100)/100;
                     } else {
-                        gpa = -99;
+                        gpa = 99;
                     }
                     
                     st.lastNameClean = String(st.lastName || '').trim();
@@ -462,9 +462,9 @@
                     st.branchName = stdInfo.branch;
                     st.grade = standardizeGrade(st.grade, st.classNum);
                     
-                    const failedSubjects = subjects.filter(x => x.avg !== -99 && x.avg < subjectThreshold(x.name));
-                    const absentSubjects = subjects.filter(x => x.avg === -99 || x.hasAbsent);
-                    const borderlineSubjects = subjects.filter(x => x.avg !== -99 && x.avg >= subjectThreshold(x.name) && x.avg < (subjectThreshold(x.name)+2));
+                    const failedSubjects = subjects.filter(x => x.avg !== 99 && x.avg < subjectThreshold(x.name));
+                    const absentSubjects = subjects.filter(x => x.avg === 99 || x.hasAbsent);
+                    const borderlineSubjects = subjects.filter(x => x.avg !== 99 && x.avg >= subjectThreshold(x.name) && x.avg < (subjectThreshold(x.name)+2));
 
                     return {...st, subjects, totalScores, gpa, hasAnyAbsent, failedSubjects, absentSubjects, borderlineSubjects};
                 });
@@ -1031,13 +1031,13 @@ styleTag.textContent = css;
             
             const rowsHTML = st.subjects.map((s, index) => {
                 const limit = subjectThreshold(s.name);
-                const isAbsent = s.m1 === -99 || s.m2 === -99 || s.m3 === -99 || s.avg === -99;
+                const isAbsent = s.m1 === 99 || s.m2 === 99 || s.m3 === 99 || s.avg === 99;
                 const isLow = !isAbsent && s.avg < limit;
                 
                 const rowClass = isAbsent ? 'bg-amber-50 text-amber-900' : (isLow ? 'bg-rose-50 text-rose-900' : '');
                 
                 const formatMark = val => {
-                    if (val === -99) return '<span class="bg-amber-200 text-amber-900 font-black px-1 rounded">غیبت</span>';
+                    if (val === 99) return '<span class="bg-amber-200 text-amber-900 font-black px-1 rounded">غیبت</span>';
                     if (val !== null && Number(val) < limit) return `<span class="bg-rose-200 text-rose-900 font-black px-1 rounded">${val}</span>`;
                     return val ?? '-';
                 };
@@ -1136,7 +1136,7 @@ styleTag.textContent = css;
                 html += st.absentSubjects.map(s => `
                     <li class="flex justify-between items-center p-2.5 bg-amber-50 rounded-xl border border-amber-100 shadow-sm mb-2">
                         <span class="font-bold text-slate-800">${s.name}</span>
-                        <span class="text-white bg-amber-600 px-3 py-1 rounded-full text-xs font-black">غیبت (-99)</span>
+                        <span class="text-white bg-amber-600 px-3 py-1 rounded-full text-xs font-black">غیبت (99)</span>
                     </li>`).join('');
             }
             if (!st.failedSubjects.length && !st.absentSubjects.length) {
@@ -1150,7 +1150,7 @@ styleTag.textContent = css;
         function renderAnalyticsDashboard() {
             if (!filteredStudents.length) return;
             
-            const validGpaStudents = filteredStudents.filter(s => !s.hasAnyAbsent && s.gpa !== -99);
+            const validGpaStudents = filteredStudents.filter(s => !s.hasAnyAbsent && s.gpa !== 99);
             const totalGPA = validGpaStudents.reduce((acc, s) => acc + s.gpa, 0);
             
             const passCount = filteredStudents.filter(s => s.failedSubjects.length === 0 && !s.hasAnyAbsent).length;
@@ -1167,7 +1167,7 @@ styleTag.textContent = css;
                 if (!classStats[st.classNum]) classStats[st.classNum] = { total: 0, pass: 0, gpaSum: 0, validCount: 0 };
                 classStats[st.classNum].total++; 
                 if (st.failedSubjects.length === 0 && !st.hasAnyAbsent) classStats[st.classNum].pass++;
-                if (!st.hasAnyAbsent && st.gpa !== -99) {
+                if (!st.hasAnyAbsent && st.gpa !== 99) {
                     classStats[st.classNum].gpaSum += st.gpa;
                     classStats[st.classNum].validCount++;
                 }
@@ -1198,7 +1198,7 @@ styleTag.textContent = css;
 
             const subjectStats = {};
             filteredStudents.forEach(st => st.subjects.forEach(s => { 
-                if (s.avg !== -99) {
+                if (s.avg !== 99) {
                     if (!subjectStats[s.name]) subjectStats[s.name] = []; 
                     subjectStats[s.name].push(s.avg); 
                 }
