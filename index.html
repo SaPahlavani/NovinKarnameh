@@ -612,120 +612,417 @@
             const styleTag = document.getElementById('dynamic-print-css');
 
             const isA4 = paper === 'A4';
-            // ارتفاع امن برای جلوگیری از رفتن خط آخر به صفحه بعد در چاپگرهای مختلف
-            const wrapperHeight = isA4 ? '272mm' : '188mm';
+            // ارتفاع کل صفحه برای پوشش کامل برگه A4 عمودی بدون سرریز شدن به صفحه بعد
+            const wrapperHeight = isA4 ? '276mm' : '190mm';
 
             let css = `
                 @page { size: ${paper} portrait; margin: 4mm 5mm; }
             `;
 
-            if (layout === '2') {
-                css += `
-                @media print {
-                    .cards-wrapper {
-                        display: grid !important;
-                        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
-                        gap: 2.5mm !important;
-                        height: ${wrapperHeight} !important;
-                        max-height: ${wrapperHeight} !important;
-                        width: 100% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        page-break-after: always !important;
-                        break-after: page !important;
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
-                        overflow: hidden !important;
-                    }
-                    .card-page {
-                        width: 100% !important;
-                        height: 100% !important;
-                        max-height: 100% !important;
-                        border: 1.5px solid #0f172a !important;
-                        padding: 1.5mm 2mm !important;
-                        margin: 0 !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        justify-content: space-between !important;
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
-                        page-break-after: avoid !important;
-                        break-after: avoid !important;
-                        overflow: hidden !important;
-                    }
-                    .card-page .card-header-box {
-                        font-size: ${isA4 ? '8px' : '6.8px'} !important;
-                        line-height: 1.2 !important;
-                        margin-bottom: 1mm !important;
-                    }
-                    .card-page .card-header-top > div {
-                        padding: 0.8mm 1.5mm !important;
-                    }
-                    .card-page .card-header-bottom > div {
-                        padding: 0.6mm 1.5mm !important;
-                    }
-                    .card-page table {
-                        width: 100% !important;
-                        flex-grow: 1 !important;
-                        margin-bottom: 1mm !important;
-                    }
-                    .card-page th, .card-page td {
-                        padding: ${isA4 ? '0.25mm 1.2mm' : '0.15mm 0.8mm'} !important;
-                        font-size: ${isA4 ? '8px' : '6.5px'} !important;
-                        line-height: 1.1 !important;
-                    }
-                    .card-page .card-summary-box {
-                        font-size: ${isA4 ? '8px' : '6.8px'} !important;
-                        margin-bottom: 0.8mm !important;
-                    }
-                    .card-page .card-summary-box > div {
-                        padding: 0.5mm !important;
-                    }
-                    .card-page .card-notes-box {
-                        font-size: ${isA4 ? '7.5px' : '6.2px'} !important;
-                        line-height: 1.15 !important;
-                        padding: 0.8mm 1.2mm !important;
-                        margin-bottom: 0.8mm !important;
-                    }
-                    .card-page .card-sign-box {
-                        font-size: ${isA4 ? '7.8px' : '6.5px'} !important;
-                        margin-top: 0.5mm !important;
-                        padding-top: 0 !important;
-                    }
-                }`;
-            } else {
-                css += `
-                @media print {
-                    .cards-wrapper {
-                        display: block !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                    }
-                    .card-page {
-                        width: 100% !important;
-                        height: ${wrapperHeight} !important;
-                        border: 2px solid #0f172a !important;
-                        padding: 4mm !important;
-                        margin: 0 !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        justify-content: space-between !important;
-                        page-break-after: always !important;
-                        break-after: page !important;
-                        page-break-inside: avoid !important;
-                        break-inside: avoid !important;
-                    }
-                    .card-page table {
-                        flex-grow: 1 !important;
-                    }
-                    .card-page th, .card-page td {
-                        padding: 1.5mm !important;
-                        font-size: ${isA4 ? '11px' : '9px'} !important;
-                    }
-                }`;
-            }
-            styleTag.textContent = css;
+      // بررسی می‌کند که حالت چاپ، دو کارنامه در یک صفحه باشد.
+if (layout === '2') {
+
+    // اضافه کردن تنظیمات CSS مخصوص چاپ
+    css += `
+    @media print {
+
+        /* ==============================
+           تنظیمات کلی صفحه و دو کارنامه
+           ============================== */
+
+        .cards-wrapper {
+
+            /* کارنامه‌ها را به صورت شبکه‌ای (Grid) زیر هم قرار می‌دهد */
+            display: grid !important;
+
+            /* صفحه را به دو ردیف مساوی تقسیم می‌کند؛
+               هر ردیف برای یک کارنامه است.
+               minmax(0, 1fr) اجازه می‌دهد محتوا از فضای تعیین‌شده بیشتر نشود. */
+            grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) !important;
+
+            /* فاصله عمودی بین دو کارنامه را 3.5 میلی‌متر می‌کند */
+            gap: 3.5mm !important;
+
+            /* ارتفاع کل محدوده دو کارنامه را برابر wrapperHeight قرار می‌دهد */
+            height: ${wrapperHeight} !important;
+
+            /* اجازه نمی‌دهد ارتفاع از wrapperHeight بیشتر شود */
+            max-height: ${wrapperHeight} !important;
+
+            /* عرض محدوده کارنامه‌ها را 100 درصد می‌کند */
+            width: 100% !important;
+
+            /* فاصله بیرونی از اطراف را حذف می‌کند */
+            margin: 0 !important;
+
+            /* فاصله داخلی محدوده را حذف می‌کند */
+            padding: 0 !important;
+
+            /* بعد از این محدوده، صفحه چاپ جدید شروع می‌شود */
+            page-break-after: always !important;
+            break-after: page !important;
+
+            /* اجازه نمی‌دهد محدوده دو کارنامه بین صفحات تقسیم شود */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+
+            /* محتوای بیرون‌زده از محدوده را مخفی می‌کند */
+            overflow: hidden !important;
         }
+
+
+        /* ==============================
+           تنظیمات کادر هر کارنامه
+           ============================== */
+
+        .card-page {
+
+            /* عرض هر کارنامه برابر عرض محدوده والد می‌شود */
+            width: 100% !important;
+
+            /* ارتفاع هر کارنامه برابر ارتفاع ردیف خودش می‌شود */
+            height: 100% !important;
+
+            /* اجازه نمی‌دهد ارتفاع از 100 درصد بیشتر شود */
+            max-height: 100% !important;
+
+            /* ضخامت، نوع و رنگ کادر دور کارنامه */
+            border: 2px solid #0f172a !important;
+
+            /* فاصله داخلی کادر:
+               2 میلی‌متر از بالا و پایین
+               2.5 میلی‌متر از چپ و راست */
+            padding: 2mm 2.5mm !important;
+
+            /* فاصله بیرونی کارنامه را حذف می‌کند */
+            margin: 0 !important;
+
+            /* محتوای کارنامه را با Flexbox مرتب می‌کند */
+            display: flex !important;
+
+            /* بخش‌های کارنامه را زیر هم قرار می‌دهد */
+            flex-direction: column !important;
+
+            /* فضای خالی عمودی را بین بخش‌های کارنامه تقسیم می‌کند */
+            justify-content: space-between !important;
+
+            /* اجازه نمی‌دهد یک کارنامه بین صفحات چاپ تقسیم شود */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+
+            /* بعد از هر کارنامه صفحه جدید ایجاد نمی‌کند */
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+
+            /* محتوای خارج از کادر کارنامه را مخفی می‌کند */
+            overflow: hidden !important;
+        }
+
+
+        /* ==============================
+           کادر اصلی سربرگ و مشخصات
+           ============================== */
+
+        .card-page .card-header-box {
+
+            /* اندازه فونت سربرگ:
+               A4 برابر 12 پیکسل
+               A5 برابر 8.5 پیکسل */
+            font-size: ${isA4 ? '12px' : '8.5px'} !important;
+
+            /* فاصله عمودی خطوط متن را 1.3 برابر اندازه فونت می‌کند */
+            line-height: 1.3 !important;
+
+            /* فاصله پایین سربرگ تا جدول دروس را 1 میلی‌متر می‌کند */
+            margin-bottom: 1mm !important;
+
+            /* حداقل ارتفاع کادر سربرگ را 17 میلی‌متر می‌کند */
+            min-height: 17mm !important;
+
+            /* اجازه نمی‌دهد سربرگ هنگام کمبود فضا کوچک شود */
+            flex-shrink: 0 !important;
+        }
+
+
+        /* ==============================
+           بخش بالایی سربرگ و مشخصات
+           ============================== */
+
+        .card-page .card-header-top > div {
+
+            /* فاصله داخلی هر کادر:
+               3 میلی‌متر از بالا و پایین
+               1.8 میلی‌متر از چپ و راست */
+            padding: 3.0mm 1.8mm !important;
+
+            /* حداقل ارتفاع هر کادر بالایی را 17 میلی‌متر می‌کند */
+            min-height: 17mm !important;
+        }
+
+
+        /* ==============================
+           بخش پایینی سربرگ
+           ============================== */
+
+        .card-page .card-header-bottom > div {
+
+            /* فاصله داخلی کادرها را 0.9 میلی‌متر عمودی
+               و 1.5 میلی‌متر افقی می‌کند */
+            padding: 0.9mm 1.5mm !important;
+
+            /* اندازه فونت:
+               A4 برابر 11 پیکسل
+               A5 برابر 8.5 پیکسل */
+            font-size: ${isA4 ? '11px' : '8.5px'} !important;
+        }
+
+
+        /* ==============================
+           جدول دروس
+           ============================== */
+
+        .card-page table {
+
+            /* عرض جدول را برابر عرض کارنامه می‌کند */
+            width: 100% !important;
+
+            /* جدول به صورت خودکار فضای اضافه را پر نمی‌کند */
+            flex-grow: 0 !important;
+
+            /* در صورت کمبود فضا اجازه کوچک شدن جدول را می‌دهد */
+            flex-shrink: 1 !important;
+
+            /* فاصله پایین جدول تا بخش بعدی را 1 میلی‌متر می‌کند */
+            margin-bottom: 1mm !important;
+        }
+
+
+        /* ==============================
+           عنوان ستون‌های جدول دروس
+           ============================== */
+
+        .card-page th {
+
+            /* فاصله داخلی عنوان ستون‌ها:
+               A4: یک میلی‌متر عمودی و 1.7 میلی‌متر افقی
+               A5: 0.1 میلی‌متر عمودی و 1 میلی‌متر افقی */
+            padding: ${isA4 ? '0.5mm 1.7mm' : '0.1mm 1mm'} !important;
+
+            /* اندازه فونت عنوان ستون‌ها:
+               A4 برابر 11.5 پیکسل
+               A5 برابر 9 پیکسل */
+            font-size: ${isA4 ? '11.5px' : '9px'} !important;
+
+            /* ارتفاع خطوط عنوان ستون‌ها را فشرده‌تر می‌کند */
+            line-height: 1 !important;
+        }
+
+
+        /* ==============================
+           ردیف‌های نمرات و نام دروس
+           ============================== */
+
+        .card-page td {
+
+            /* فاصله داخلی سلول‌ها:
+               A4: یک میلی‌متر عمودی و 1.8 میلی‌متر افقی
+               A5: 0.2 میلی‌متر عمودی و 1.1 میلی‌متر افقی */
+            padding: ${isA4 ? '1.0mm 1.8mm' : '0.2mm 1.1mm'} !important;
+
+            /* اندازه فونت اطلاعات جدول:
+               A4 برابر 14 پیکسل
+               A5 برابر 9.5 پیکسل */
+            font-size: ${isA4 ? '14px' : '9.5px'} !important;
+
+            /* فاصله خطوط داخل سلول‌ها را کاهش می‌دهد */
+            line-height: 1 !important;
+        }
+
+
+        /* ==============================
+           بخش پایینی کارنامه
+           شامل معدل، جمع نمرات، توضیحات و امضا
+           ============================== */
+
+        .card-page .card-footer-section {
+
+            /* اجازه می‌دهد بخش پایینی فضای باقی‌مانده را بگیرد */
+            flex-grow: 1 !important;
+
+            /* اجزای بخش پایینی را زیر هم قرار می‌دهد */
+            display: flex !important;
+            flex-direction: column !important;
+
+            /* فضای خالی را بین اجزای بخش پایینی تقسیم می‌کند */
+            justify-content: space-between !important;
+        }
+
+
+        /* ==============================
+           کادر خلاصه نمرات و معدل
+           ============================== */
+
+        .card-page .card-summary-box {
+
+            /* اندازه فونت:
+               A4 برابر 11.5 پیکسل
+               A5 برابر 9 پیکسل */
+            font-size: ${isA4 ? '11.5px' : '9px'} !important;
+
+            /* فاصله پایین کادر خلاصه تا بخش بعدی */
+            margin-bottom: 1mm !important;
+        }
+
+
+        /* سلول‌های داخل کادر خلاصه نمرات */
+
+        .card-page .card-summary-box > div {
+
+            /* فاصله داخلی هر قسمت را 0.8 میلی‌متر می‌کند */
+            padding: 0.8mm !important;
+        }
+
+
+        /* ==============================
+           کادر توضیحات و ملاحظات
+           ============================== */
+
+        .card-page .card-notes-box {
+
+            /* اندازه فونت:
+               A4 برابر 11 پیکسل
+               A5 برابر 8.5 پیکسل */
+            font-size: ${isA4 ? '11px' : '8.5px'} !important;
+
+            /* فاصله خطوط توضیحات را 1.45 برابر فونت می‌کند */
+            line-height: 1.45 !important;
+
+            /* فاصله داخلی:
+               1.5 میلی‌متر بالا و پایین
+               2 میلی‌متر چپ و راست */
+            padding: 1.5mm 2mm !important;
+
+            /* فاصله پایین کادر توضیحات */
+            margin-bottom: 1mm !important;
+
+            /* اجازه می‌دهد کادر توضیحات فضای اضافه را بگیرد */
+            flex-grow: 1 !important;
+
+            /* محتوای داخل کادر را با Flexbox مرتب می‌کند */
+            display: flex !important;
+            flex-direction: column !important;
+
+            /* متن توضیحات را در راستای عمودی وسط‌چین می‌کند */
+            justify-content: center !important;
+        }
+
+
+        /* ==============================
+           بخش مهر و امضا
+           ============================== */
+
+        .card-page .card-sign-box {
+
+            /* اندازه فونت:
+               A4 برابر 11 پیکسل
+               A5 برابر 9 پیکسل */
+            font-size: ${isA4 ? '11px' : '9px'} !important;
+
+            /* فاصله بالای بخش امضا را 4 میلی‌متر می‌کند */
+            padding-top: 4mm !important;
+
+            /* فاصله پایین بخش امضا را 5 میلی‌متر می‌کند */
+            padding-bottom: 5mm !important;
+        }
+    }`;
+
+} else {
+
+    // ==============================
+    // حالت چاپ یک کارنامه در هر صفحه
+    // ==============================
+
+    css += `
+    @media print {
+
+        /* تنظیمات محدوده کارنامه‌ها */
+
+        .cards-wrapper {
+
+            /* کارنامه‌ها را به صورت معمولی و زیر هم نمایش می‌دهد */
+            display: block !important;
+
+            /* فاصله بیرونی را حذف می‌کند */
+            margin: 0 !important;
+
+            /* فاصله داخلی را حذف می‌کند */
+            padding: 0 !important;
+        }
+
+
+        /* تنظیمات خود کارنامه */
+
+        .card-page {
+
+            /* عرض کارنامه را 100 درصد می‌کند */
+            width: 100% !important;
+
+            /* ارتفاع کارنامه را برابر wrapperHeight قرار می‌دهد */
+            height: ${wrapperHeight} !important;
+
+            /* کادر دور کارنامه */
+            border: 2px solid #0f172a !important;
+
+            /* فاصله داخلی کادر از چهار طرف 5 میلی‌متر */
+            padding: 5mm !important;
+
+            /* فاصله بیرونی را حذف می‌کند */
+            margin: 0 !important;
+
+            /* فعال کردن چیدمان Flexbox */
+            display: flex !important;
+
+            /* قرار دادن بخش‌ها زیر هم */
+            flex-direction: column !important;
+
+            /* تقسیم فضای خالی بین بخش‌های کارنامه */
+            justify-content: space-between !important;
+
+            /* بعد از هر کارنامه صفحه جدید چاپ می‌شود */
+            page-break-after: always !important;
+            break-after: page !important;
+
+            /* جلوگیری از تقسیم کارنامه بین صفحات */
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+
+        /* تنظیمات عنوان ستون‌ها و سلول‌های جدول */
+
+        .card-page th,
+        .card-page td {
+
+            /* فاصله داخلی تمام سلول‌ها از چهار طرف 2 میلی‌متر */
+            padding: 2mm !important;
+
+            /* اندازه فونت:
+               A4 برابر 13.5 پیکسل
+               A5 برابر 11 پیکسل */
+            font-size: ${isA4 ? '13.5px' : '11px'} !important;
+        }
+    }`;
+}
+
+
+// ==============================
+// اعمال CSS ساخته‌شده به صفحه
+// ==============================
+
+// تمام CSS تولیدشده را داخل تگ style قرار می‌دهد
+styleTag.textContent = css;
+
+}
 
         function generateCardHTML(st) {
             const failedNames = st.failedSubjects.map(s => s.name).join('، ') || 'موردی مشاهده نشد';
@@ -737,75 +1034,81 @@
                 const isAbsent = s.m1 === -99 || s.m2 === -99 || s.m3 === -99 || s.avg === -99;
                 const isLow = !isAbsent && s.avg < limit;
                 
-                const rowClass = isAbsent ? 'bg-amber-50 text-amber-900 font-bold' : (isLow ? 'bg-rose-50 text-rose-900 font-bold' : '');
+                const rowClass = isAbsent ? 'bg-amber-50 text-amber-900' : (isLow ? 'bg-rose-50 text-rose-900' : '');
                 
                 const formatMark = val => {
-                    if (val === -99) return '<span class="bg-amber-200 text-amber-900 font-bold px-1 rounded">غیبت</span>';
+                    if (val === -99) return '<span class="bg-amber-200 text-amber-900 font-black px-1 rounded">غیبت</span>';
                     if (val !== null && Number(val) < limit) return `<span class="bg-rose-200 text-rose-900 font-black px-1 rounded">${val}</span>`;
                     return val ?? '-';
                 };
 
                 return `
-                <tr class="text-center ${rowClass}">
-                    <td class="border border-slate-600 px-1 py-0.5">${index + 1}</td>
-                    <td class="border border-slate-600 px-1.5 py-0.5 text-right font-bold">${s.name}</td>
-                    <td class="border border-slate-600 px-1 py-0.5">${formatMark(s.m1)}</td>
-                    <td class="border border-slate-600 px-1 py-0.5">${formatMark(s.m2)}</td>
-                    <td class="border border-slate-600 px-1 py-0.5">${formatMark(s.m3)}</td>
+                <tr class="text-center font-bold ${rowClass}">
+                    <td class="border border-slate-700 px-1 py-0.5 font-black">${index + 1}</td>
+                    <td class="border border-slate-700 px-2 py-0.5 text-right font-black text-slate-900">${s.name}</td>
+                    <td class="border border-slate-700 px-1 py-0.5 font-black">${formatMark(s.m1)}</td>
+                    <td class="border border-slate-700 px-1 py-0.5 font-black">${formatMark(s.m2)}</td>
+                    <td class="border border-slate-700 px-1 py-0.5 font-black">${formatMark(s.m3)}</td>
+                    <td class="border border-slate-700 px-2 py-0.5 text-right"></td>
                 </tr>`;
             }).join('');
 
             return `
-                <div class="card-page bg-white border-2 border-slate-700 p-2.5 text-[9.5px] flex flex-col justify-between shadow-sm rounded-lg print:rounded-none print:shadow-none" dir="rtl">
-                    <!-- سرتیتر فشرده جدید همراه با نوار افقی سال تحصیلی، رشته/پایه و شماره کلاس -->
-                    <div class="card-header-box border-2 border-slate-700 mb-1 text-[9px] leading-3.5 bg-slate-50/50">
-                        <div class="card-header-top grid grid-cols-3 border-b border-slate-700">
-                            <div class="border-l border-slate-700 p-1 flex flex-col justify-center">
-                                <div class="font-black text-slate-900">جمهوری اسلامی ایران - وزارت آموزش و پرورش</div>
-                                <div class="font-bold text-slate-700 mt-0.5">کارنامه ارزیابی مستمر</div>
+                <div class="card-page bg-white border-2 border-slate-800 p-3 text-[12px] flex flex-col justify-between shadow-sm rounded-lg print:rounded-none print:shadow-none" dir="rtl">
+                    <!-- سرتیتر فشرده با فونت درشت -->
+                    <div class="card-header-box border-2 border-slate-800 mb-1 text-[11px] leading-4 bg-slate-50/50">
+                        <div class="card-header-top grid grid-cols-3 border-b border-slate-800">
+                            <div class="border-l border-slate-800 p-1.5 flex flex-col justify-center">
+                                <div class="font-black text-slate-900 text-[11.5px]">جمهوری اسلامی ایران - وزارت آموزش و پرورش</div>
+                                <div class="font-bold text-slate-800 mt-0.5">کارنامه ارزیابی مستمر</div>
                             </div>
-                            <div class="border-l border-slate-700 p-1 flex flex-col justify-center text-right">
-                                <div>استان: <b>خراسان رضوی</b> | منطقه: <b>ناحیه ۱ مشهد</b></div>
-                                <div class="mt-0.5">آموزشگاه: <b>دبیرستان و هنرستان الزهرا (س)</b></div>
+                            <div class="border-l border-slate-800 p-1.5 flex flex-col justify-center text-right">
+                                <div>استان: <b class="font-black">خراسان رضوی</b> | منطقه: <b class="font-black">ناحیه ۱ مشهد</b></div>
+                                <div class="mt-0.5">آموزشگاه: <b class="font-black">دبیرستان و هنرستان الزهرا (س)</b></div>
                             </div>
-                            <div class="p-1 flex flex-col justify-center text-right">
-                                <div>نام و نام خانوادگی: <b>${st.fullName}</b></div>
-                                <div class="mt-0.5">نام پدر: <b>${st.fatherName || '...'}</b> | کد: <b>${st.id}</b></div>
+                            <div class="p-1.5 flex flex-col justify-center text-right">
+                                <div>نام و نام خانوادگی: <b class="font-black text-[12.5px] text-slate-900">${st.fullName}</b></div>
+                                <div class="mt-0.5">نام پدر: <b class="font-black">${st.fatherName || '...'}</b> | کد: <b class="font-black">${st.id}</b></div>
                             </div>
                         </div>
-                        <div class="card-header-bottom grid grid-cols-3 bg-slate-200/70 text-center font-medium">
-                            <div class="border-l border-slate-700 py-0.5 px-1">سال تحصیلی: <b class="font-black text-slate-900">${st.academicYear || '1405-1406'}</b></div>
-                            <div class="border-l border-slate-700 py-0.5 px-1">رشته/پایه: <b class="font-black text-slate-900">${st.grade} ${st.major} ${st.shift ? '('+st.shift+')' : ''}</b></div>
+                        <div class="card-header-bottom grid grid-cols-3 bg-slate-200/80 text-center font-bold text-[11px]">
+                            <div class="border-l border-slate-800 py-0.5 px-1">سال تحصیلی: <b class="font-black text-slate-900">${st.academicYear || '1405-1406'}</b></div>
+                            <div class="border-l border-slate-800 py-0.5 px-1">رشته/پایه: <b class="font-black text-slate-900">${st.grade} ${st.major} ${st.shift ? '('+st.shift+')' : ''}</b></div>
                             <div class="py-0.5 px-1">شماره کلاس: <b class="font-black text-slate-900">${st.classNum}</b></div>
                         </div>
                     </div>
 
-                    <table class="w-full border-collapse border border-slate-700 text-center text-[9px] mb-1 flex-grow">
+                    <!-- جدول دروس با ستون ملاحظات کاملاً خالی و عریض -->
+                    <table class="w-full border-collapse border-2 border-slate-800 text-center text-[12px] mb-1 table-fixed">
                         <thead>
                             <tr class="bg-slate-200 text-slate-900 font-black">
-                                <th class="border border-slate-700 px-1 py-0.5 w-7">ردیف</th>
-                                <th class="border border-slate-700 px-2 py-0.5 text-right">نام درس</th>
-                                <th class="border border-slate-700 px-1 py-0.5 w-14">مستمر ۱</th>
-                                <th class="border border-slate-700 px-1 py-0.5 w-14">مستمر ۲</th>
-                                <th class="border border-slate-700 px-1 py-0.5 w-14">مستمر ۳</th>
+                                <th class="border border-slate-800 px-1 py-0.5 w-[5%]">ردیف</th>
+                                <th class="border border-slate-800 px-2 py-0.5 text-right w-[28%]">نام درس</th>
+                                <th class="border border-slate-800 px-1 py-0.5 w-[10%]">مستمر ۱</th>
+                                <th class="border border-slate-800 px-1 py-0.5 w-[10%]">مستمر ۲</th>
+                                <th class="border border-slate-800 px-1 py-0.5 w-[10%]">مستمر ۳</th>
+                                <th class="border border-slate-800 px-2 py-0.5 text-center w-[37%]">ملاحظات</th>
                             </tr>
                         </thead>
                         <tbody>${rowsHTML}</tbody>
                     </table>
 
-                    <div>
-                        <div class="card-summary-box grid grid-cols-3 border border-slate-700 text-center text-[8.5px] mb-1 bg-slate-50">
-                            <div class="border-l border-slate-700 p-0.5">جمع نمرات: <b>${st.hasAnyAbsent ? 'ـ (دارای غیبت)' : st.totalScores}</b></div>
-                            <div class="border-l border-slate-700 p-0.5">معدل: <b>${st.hasAnyAbsent ? '<span class="text-amber-700 font-bold">غیبت</span>' : st.gpa}</b></div>
-                            <div class="p-0.5">رتبه در کلاس: <b>${st.classRank} ${st.classRank !== 'نامشخص' && st.classTotalCount ? 'از ' + st.classTotalCount : ''}</b></div>
+                    <!-- کادر پایین بزرگ‌تر برای نمایش اسامی دروس و محل مهر و امضا -->
+                    <div class="card-footer-section flex-grow flex flex-col justify-between">
+                        <div class="card-summary-box grid grid-cols-3 border-2 border-slate-800 text-center text-[11.5px] mb-1 bg-slate-100 font-bold">
+                            <div class="border-l border-slate-800 p-1">جمع نمرات: <b class="font-black text-[12.5px]">${st.hasAnyAbsent ? 'ـ (دارای غیبت)' : st.totalScores}</b></div>
+                            <div class="border-l border-slate-800 p-1">معدل: <b class="font-black text-[12.5px]">${st.hasAnyAbsent ? '<span class="text-amber-700 font-black">غیبت</span>' : st.gpa}</b></div>
+                            <div class="p-1">رتبه در کلاس: <b class="font-black text-[12.5px]">${st.classRank} ${st.classRank !== 'نامشخص' && st.classTotalCount ? 'از ' + st.classTotalCount : ''}</b></div>
                         </div>
-                        <div class="card-notes-box border border-slate-700 p-1 text-[7.8px] leading-3.5 mb-1">
-                            <span class="block truncate"><b>دروس تجدیدی (زیر حدنصاب):</b> ${failedNames}</span>
-                            <span class="block truncate mt-0.5"><b>دروس دارای غیبت:</b> ${absentNames} | <b>دروس لب مرز:</b> ${borderlineNames}</span>
+
+                        <div class="card-notes-box border-2 border-slate-800 p-2 text-[11px] leading-5 mb-1 bg-slate-50/40 font-semibold flex-grow flex flex-col justify-center">
+                            <div class="mb-0.5"><b class="font-black text-slate-900">دروس تجدیدی (زیر حدنصاب):</b> ${failedNames}</div>
+                            <div><b class="font-black text-slate-900">دروس دارای غیبت:</b> ${absentNames} &nbsp;|&nbsp; <b class="font-black text-slate-900">دروس لب مرز:</b> ${borderlineNames}</div>
                         </div>
-                        <div class="card-sign-box grid grid-cols-2 gap-6 mt-0.5 pt-0.5 text-center text-[8px] font-bold">
-                            <div class="border-t border-slate-600 pt-0.5">مهر و امضای مدیر</div>
-                            <div class="border-t border-slate-600 pt-0.5">امضای ولی دانش‌آموز</div>
+
+                        <div class="card-sign-box grid grid-cols-2 gap-10 pt-4 pb-1 text-center text-[11px] font-black">
+                            <div class="border-t-2 border-slate-700 pt-1">مهر و امضای مدیر</div>
+                            <div class="border-t-2 border-slate-700 pt-1">امضای ولی دانش‌آموز</div>
                         </div>
                     </div>
                 </div>
